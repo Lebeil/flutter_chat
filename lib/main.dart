@@ -86,6 +86,7 @@ class HomePage extends StatelessWidget {
       },
     );
   }
+  // Ajouter un utlisateur
   void addUser(context) {
     try {
       usersRef.add({
