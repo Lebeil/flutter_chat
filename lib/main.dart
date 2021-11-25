@@ -39,7 +39,9 @@ class HomePage extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Firebase Chat'),
       ),
-      body: Container(),
+      body: const SingleChildScrollView(
+        child: ListSection(),
+      ),
         floatingActionButton: FloatingActionButton(
           onPressed: ()=> _showOptions(context),
           child: const Icon(Icons.add),
@@ -101,5 +103,116 @@ class HomePage extends StatelessWidget {
     } catch (error) {
       print(error.toString());
     }
+  }
+}
+
+class ListSection extends StatefulWidget {
+  const ListSection({Key? key}) : super(key: key);
+
+  @override
+  _ListSectionState createState() => _ListSectionState();
+}
+
+class _ListSectionState extends State<ListSection> {
+  late List<DocumentSnapshot> _docs;
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder(
+      stream: usersRef.snapshots(),
+      builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+        if (!snapshot.hasData) return const LinearProgressIndicator();
+        _docs = snapshot.data!.docs;
+        if(_docs == null) return const Center(child: Text('Aucun contact!'));
+        return Container(
+          child: Column(
+            children: _docs.map((document) {
+              return InkWell(
+                onTap: () => openChat(
+                  document.id, document['pseudo'], document['photoUrl']
+                ),
+                child: UserLineDesign(document.id, document['pseudo'], document['photoUrl'])
+              );
+            }).toList(),
+          )
+        );
+      },
+    );
+  }
+  void openChat(String userID, String userName, String userPhoto) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+          builder: (context) => ChatPage(userID, userName, userPhoto)),
+    );
+  }
+}
+
+//Design list contact
+class UserLineDesign extends StatelessWidget {
+  final String _userID;
+  final String _pseudo;
+  final String _photoUrl;
+  const UserLineDesign(this._userID, this._pseudo, this._photoUrl, {Key? key})
+      : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(15, 10, 10, 10),
+      child: Row(
+        children: [
+          SizedBox(
+            height: 70,
+            width: 70,
+            child: CircleAvatar(
+              backgroundImage: NetworkImage(_photoUrl),
+            ),
+          ),
+          const SizedBox(width: 20),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(_pseudo,
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              Text(_userID, style: const TextStyle(fontSize: 17)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class ChatPage extends StatelessWidget {
+  final otherUserID;
+  final otherUserName;
+  final otherUserPhoto;
+  const ChatPage(
+      String this.otherUserID, this.otherUserName, this.otherUserPhoto,
+      {Key? key})
+      : super(key: key);
+  @override
+  Widget build(BuildContext context) {
+    print(otherUserID);
+    return Scaffold(
+      appBar: AppBar(
+        title: Row(
+          children: [
+            CircleAvatar(
+              backgroundImage: NetworkImage(otherUserPhoto),
+            ),
+            const SizedBox(width: 20),
+            Text(
+              otherUserName,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+      body: Container(
+        padding: const EdgeInsets.all(10),
+        color: Colors.grey[100],
+      ),
+    );
   }
 }
