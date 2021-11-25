@@ -1,14 +1,33 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 FirebaseFirestore firestore = FirebaseFirestore.instance;
 CollectionReference usersRef = firestore.collection('Users');
+FirebaseAuth auth = FirebaseAuth.instance;
 
 Future<void> main() async{
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+  getUserID();
   runApp(const MyApp());
+}
+
+getUserID() {
+  auth.authStateChanges().listen((User? user) {
+    if(user == null) {
+      try {
+        print('Utilisateur non connecté');
+        auth.signInWithEmailAndPassword(
+          email: 'elon@me.com', password: 'lololol');
+      } catch(e) {
+        print(e.toString());
+      }
+    } else {
+      print('Utlisateur connecté' + user.email!);
+    }
+  });
 }
 
 class MyApp extends StatelessWidget {
