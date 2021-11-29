@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+// Chat page
+import 'chat_page.dart';
 
 FirebaseFirestore firestore = FirebaseFirestore.instance;
 CollectionReference usersRef = firestore.collection('Users');
@@ -202,36 +204,3 @@ class UserLineDesign extends StatelessWidget {
   }
 }
 
-class ChatPage extends StatelessWidget {
-  final otherUserID;
-  final otherUserName;
-  final otherUserPhoto;
-  const ChatPage(
-      String this.otherUserID, this.otherUserName, this.otherUserPhoto,
-      {Key? key})
-      : super(key: key);
-  @override
-  Widget build(BuildContext context) {
-    print(otherUserID);
-    return Scaffold(
-      appBar: AppBar(
-        title: Row(
-          children: [
-            CircleAvatar(
-              backgroundImage: NetworkImage(otherUserPhoto),
-            ),
-            const SizedBox(width: 20),
-            Text(
-              otherUserName,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
-      ),
-      body: Container(
-        padding: const EdgeInsets.all(10),
-        color: Colors.grey[100],
-      ),
-    );
-  }
-}
