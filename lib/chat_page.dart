@@ -37,6 +37,7 @@ class ChatPage extends StatelessWidget {
       body: Container(
         padding: const EdgeInsets.all(10),
         color: Colors.grey[100],
+        child: ListSection(otherUserID),
       ),
       bottomNavigationBar: MessageField(otherUserID),
     );
@@ -103,5 +104,121 @@ class MessageField extends StatelessWidget {
       print(e.toString());
     }
   }
+}
 
+class ListSection extends StatefulWidget {
+  final String otherUserID;
+  const ListSection(this.otherUserID, {Key? key}) : super(key: key);
+  @override
+  _ListSectionState createState() => _ListSectionState();
+}
+
+class _ListSectionState extends State<ListSection> {
+  late List<DocumentSnapshot> _docs;
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder(
+      stream: chatRef
+          .doc(currentUserID)
+          .collection(widget.otherUserID)
+          .orderBy('date')
+          .snapshots(),
+      builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+        if (!snapshot.hasData) return const Center(child: Text('Chargement'));
+        _docs = snapshot.data!.docs;
+        if (_docs.isEmpty) {
+          return const Center(child: Text('Envoyez votre premier message'));
+        }
+        return SingleChildScrollView(
+          child: Column(
+            children: _docs.map((document) {
+              return document['userID'] == currentUserID
+                  ? CurrentUserMessage(document['text'], document['date'])
+                  : OtherUserMessage(document['text'], document['date']);
+            }).toList(),
+          ),
+        );
+      },
+    );
+  }
+}
+
+//Affichage à droite de l'écran avec une bulle bleue.
+class CurrentUserMessage extends StatelessWidget {
+  final String textMessage;
+  final String dateMessage;
+  const CurrentUserMessage(this.textMessage, this.dateMessage, {Key? key})
+      : super(key: key);
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          Text(
+            dateMessage.toString().substring(13, 18),
+            style: TextStyle(
+              color: Colors.grey[400],
+            ),
+          ),
+          Container(
+            margin: const EdgeInsets.fromLTRB(20, 10, 20, 10),
+            padding: const EdgeInsets.fromLTRB(10, 0, 10, 0),
+            height: 30,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(15),
+              color: Colors.blue,
+            ),
+            child: Center(
+              child: Text(
+                textMessage,
+                style: const TextStyle(color: Colors.white, fontSize: 17),
+              ),
+            ),
+          )
+        ],
+      ),
+    );
+  }
+}
+
+// Affichage à gauche avec une bulle grise.
+class OtherUserMessage extends StatelessWidget {
+  final String textMessage;
+  final String dateMessage;
+  const OtherUserMessage(this.textMessage, this.dateMessage, {Key? key})
+      : super(key: key);
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          Container(
+            margin: const EdgeInsets.fromLTRB(20, 10, 20, 10),
+            padding: const EdgeInsets.fromLTRB(10, 0, 10, 0),
+            height: 30,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(15),
+              color: Colors.grey.shade300,
+            ),
+            child: Center(
+              child: Text(
+                textMessage,
+                style: const TextStyle(fontSize: 17),
+              ),
+            ),
+          ),
+          Text(
+            dateMessage.toString().substring(13, 18),
+            style: TextStyle(
+              color: Colors.grey.shade400,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
