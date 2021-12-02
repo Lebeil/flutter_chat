@@ -4,30 +4,27 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 // Chat page
 import 'chat_page.dart';
+import 'login_page.dart';
 
 FirebaseFirestore firestore = FirebaseFirestore.instance;
 CollectionReference usersRef = firestore.collection('Users');
 FirebaseAuth auth = FirebaseAuth.instance;
+String? currentUserID;
 
 Future<void> main() async{
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
-  getUserID();
-  runApp(const MyApp());
-}
-
-getUserID() {
   auth.authStateChanges().listen((User? user) {
     if(user == null) {
       try {
         print('Utilisateur non connecté');
-        auth.signInWithEmailAndPassword(
-          email: 'elon@me.com', password: 'lololol');
+        runApp(const LoginTabBar());
       } catch(e) {
         print(e.toString());
       }
     } else {
       print('Utlisateur connecté' + user.email!);
+      runApp(const MyApp());
     }
   });
 }
@@ -59,6 +56,12 @@ class HomePage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Firebase Chat'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: ()=> auth.signOut(),
+          )
+        ]
       ),
       body: const SingleChildScrollView(
         child: ListSection(),
@@ -144,7 +147,7 @@ class _ListSectionState extends State<ListSection> {
         if (!snapshot.hasData) return const LinearProgressIndicator();
         _docs = snapshot.data!.docs;
         if(_docs == null) return const Center(child: Text('Aucun contact!'));
-        return Container(
+        return SizedBox(
           child: Column(
             children: _docs.map((document) {
               return InkWell(
@@ -195,7 +198,7 @@ class UserLineDesign extends StatelessWidget {
             children: [
               Text(_pseudo,
                   style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-              Text(_userID, style: const TextStyle(fontSize: 17)),
+              Text(_userID, style: const TextStyle(fontSize: 14)),
             ],
           ),
         ],
@@ -203,4 +206,82 @@ class UserLineDesign extends StatelessWidget {
     );
   }
 }
+
+class GetUserData extends StatelessWidget {
+  const GetUserData({Key? key}) : super(key: key);
+  @override
+  Widget build(BuildContext context) {
+    CollectionReference users = firestore.collection('Users');
+    return FutureBuilder<DocumentSnapshot>(
+      future: users.doc(currentUserID).get(),
+      builder:
+          (BuildContext context, AsyncSnapshot<DocumentSnapshot> snapshot) {
+        if (snapshot.hasError) {
+          return const Text('Un problème est survenu');
+        }
+        if (snapshot.connectionState == ConnectionState.done) {
+          Map<String, dynamic> document =
+          snapshot.data!.data() as Map<String, dynamic>;
+          return Row(
+            children: [
+              CircleAvatar(
+                backgroundImage: NetworkImage(document['photoUrl']),
+              ),
+              const SizedBox(width: 20),
+              Text(document['pseudo']),
+            ],
+          );
+        }
+        return const Text('En cours de chargement');
+      },
+    );
+  }
+}
+
+class GetLastMessage extends StatelessWidget {
+  final String otherUserID;
+  const GetLastMessage(this.otherUserID, {Key? key}) : super(key: key);
+  @override
+  Widget build(BuildContext context) {
+    CollectionReference users = firestore.collection('Users');
+    return FutureBuilder<DocumentSnapshot>(
+      future: users
+          .doc(currentUserID)
+          .collection('Messages')
+          .doc(otherUserID)
+          .get(),
+      builder:
+          (BuildContext context, AsyncSnapshot<DocumentSnapshot> snapshot) {
+        if (snapshot.hasError) {
+          return const Text('Un problème est survenu');
+        }
+
+        if (snapshot.hasData && !snapshot.data!.exists) {
+          return const Text("Aucun message");
+        }
+        if (snapshot.connectionState == ConnectionState.done) {
+          Map<String, dynamic> document =
+          snapshot.data!.data() as Map<String, dynamic>;
+          return Text(document['lastMessage'],
+              style: const TextStyle(fontSize: 17));
+        }
+        return const Text(
+          'Chargement',
+          style: TextStyle(fontSize: 17, color: Colors.grey),
+        );
+      },
+    );
+  }
+}
+
+refreshPage(context) {
+  Navigator.pushReplacement(
+    context,
+    PageRouteBuilder(
+      pageBuilder: (_, __, ___) => const MyApp(),
+      transitionDuration: const Duration(seconds: 0),
+    ),
+  );
+}
+
 
