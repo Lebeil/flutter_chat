@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-// Chat page
 import 'chat_page.dart';
 import 'login_page.dart';
 
@@ -23,7 +22,8 @@ Future<void> main() async{
         print(e.toString());
       }
     } else {
-      print('Utlisateur connecté' + user.email!);
+      print('Utlisateur connecté' + user.uid);
+      currentUserID = user.uid;
       runApp(const MyApp());
     }
   });
@@ -37,7 +37,6 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Flutter chat',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
@@ -55,8 +54,12 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Firebase Chat'),
+        title: const GetUserData(),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: ()=> refreshPage(context),
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: ()=> auth.signOut(),
@@ -147,17 +150,23 @@ class _ListSectionState extends State<ListSection> {
         if (!snapshot.hasData) return const LinearProgressIndicator();
         _docs = snapshot.data!.docs;
         if(_docs == null) return const Center(child: Text('Aucun contact!'));
-        return SizedBox(
+        return Container(
+          margin: const EdgeInsets.fromLTRB(0, 10, 0, 40),
           child: Column(
             children: _docs.map((document) {
-              return InkWell(
-                onTap: () => openChat(
-                  document.id, document['pseudo'], document['photoUrl']
-                ),
-                child: UserLineDesign(document.id, document['pseudo'], document['photoUrl'])
-              );
+              if (document.id != currentUserID) {
+                //InkWell: un clic pour toute la ligne
+                return InkWell(
+                  onTap: () => openChat(
+                      document.id, document['pseudo'], document['photoUrl']),
+                  child: UserLineDesign(
+                      document.id, document['pseudo'], document['photoUrl']),
+                );
+              } else {
+                return Container();
+              }
             }).toList(),
-          )
+          ),
         );
       },
     );
